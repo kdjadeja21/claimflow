@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_12px_28px_-16px_var(--primary)] hover:bg-primary/90 hover:shadow-[0_18px_36px_-18px_var(--primary)]",
+          "btn-gradient text-primary-foreground border-transparent",
         outline:
-          "border-border/80 bg-background/70 text-foreground shadow-sm backdrop-blur hover:border-ring/40 hover:bg-muted/80 aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border/70 bg-background/65 text-foreground shadow-sm backdrop-blur-sm hover:border-primary/30 hover:bg-muted/70 hover:shadow-[0_4px_16px_-6px_color-mix(in_oklch,var(--primary)_22%,transparent)] aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input/70 dark:bg-input/20 dark:hover:bg-input/40 dark:hover:border-primary/35",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary/90 text-secondary-foreground shadow-sm hover:bg-secondary hover:shadow-md aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
           "text-muted-foreground hover:bg-muted/80 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive text-white shadow-[0_12px_28px_-18px_var(--destructive)] hover:bg-destructive/90 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+          "bg-gradient-to-br from-destructive to-[color-mix(in_oklch,var(--destructive)_70%,oklch(0.5_0.22_10))] text-white shadow-[0_6px_20px_-8px_color-mix(in_oklch,var(--destructive)_65%,transparent)] hover:brightness-105 hover:shadow-[0_10px_28px_-6px_color-mix(in_oklch,var(--destructive)_72%,transparent)] focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -26,7 +26,7 @@ const buttonVariants = cva(
           "h-10 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1.5 rounded-lg px-3 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-12 gap-2 rounded-2xl px-5 text-[0.95rem] has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
+        lg: "h-12 gap-2.5 rounded-2xl px-6 text-[0.95rem] tracking-[-0.02em] has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
         icon: "size-10",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

@@ -82,10 +82,10 @@ export default function ScanPage() {
                 key={item.id}
                 onClick={() => setClaimType(item.id)}
                 className={cn(
-                  "rounded-full px-5 py-2 text-sm font-semibold transition-colors",
+                  "rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200",
                   claimType === item.id
-                    ? "bg-lime-400 text-black"
-                    : "border border-border bg-transparent text-foreground hover:bg-muted"
+                    ? "bg-gradient-to-r from-lime-400 to-emerald-400 text-black shadow-[0_4px_16px_-4px_rgb(132_204_22/0.5)]"
+                    : "border border-border/70 bg-background/60 text-foreground backdrop-blur-sm hover:border-primary/30 hover:bg-muted/70"
                 )}
               >
                 {item.label}

@@ -38,8 +38,9 @@ export default function Home() {
   return (
     <AppShell title="Command center" description="Premium QR claim verification for event teams.">
       <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-        <section className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-card/70 p-6 shadow-[0_30px_90px_-55px_rgb(15_23_42/0.65)] backdrop-blur-xl sm:p-8 lg:p-10">
-          <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
+        <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-gradient-to-br from-[color-mix(in_oklch,var(--primary)_12%,var(--card))] via-card/80 to-card/70 p-6 shadow-[0_30px_90px_-45px_color-mix(in_oklch,var(--primary)_45%,rgb(15_23_42))] backdrop-blur-xl sm:p-8 lg:p-10">
+          <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+          <div className="absolute bottom-0 left-1/2 h-40 w-80 -translate-x-1/2 rounded-full bg-[color-mix(in_oklch,var(--chart-2)_15%,transparent)] blur-3xl" />
           <div className="relative">
             <Badge variant="outline" className="gap-1.5">
               <Sparkles className="size-3" />
@@ -73,13 +74,13 @@ export default function Home() {
             { label: "Attendees", value: attendeeCount, icon: Users },
             { label: "Remaining", value: remaining, icon: BarChart3 },
           ].map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="hover:-translate-y-0.5">
+            <Card key={label} className="hover:-translate-y-1">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
                     {label}
                   </p>
-                  <span className="flex size-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <span className="flex size-9 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/8 text-primary shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--primary)_35%,transparent)]">
                     <Icon className="size-4" />
                   </span>
                 </div>
@@ -117,9 +118,9 @@ export default function Home() {
 
           return (
             <Link key={item.href} href={item.href} className="group block">
-              <Card className="h-full hover:-translate-y-1 hover:border-primary/30">
+              <Card className="h-full hover:-translate-y-1.5 hover:border-primary/40">
                 <CardContent className="flex h-full flex-col p-6">
-                  <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/8 text-primary shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--primary)_35%,transparent)]">
                     <Icon className="size-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-bold tracking-[-0.03em]">{item.label}</h3>
