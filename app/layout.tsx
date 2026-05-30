@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { RouteLoader } from "@/components/shared/RouteLoader";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <ThemeProvider>
+          <RouteLoader />
           {children}
           <Toaster position="top-center" richColors />
         </ThemeProvider>

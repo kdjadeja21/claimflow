@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Command, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BottomNav } from "@/components/shared/BottomNav";
-import { navItems } from "@/components/shared/BottomNav";
+import { BottomNav, navItems } from "@/components/shared/BottomNav";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/utils";
 
@@ -23,21 +22,19 @@ export function AppShell({
   const pathname = usePathname();
 
   return (
-    <main className="min-h-dvh overflow-hidden bg-background">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-grid opacity-70" />
+    <div className="min-h-dvh bg-background">
       <div className="mx-auto flex min-h-dvh w-full max-w-[1440px]">
-        <aside className="hidden w-72 shrink-0 border-r border-border/70 bg-sidebar/80 p-5 backdrop-blur-xl md:flex md:flex-col">
-          <Link href="/" className="flex items-center gap-3 rounded-2xl px-2 py-1">
-            <span className="flex size-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Zap className="size-5" />
-            </span>
-            <div>
-              <p className="text-base font-bold tracking-[-0.03em]">ClaimFlow</p>
-              <p className="text-xs font-medium text-muted-foreground">Live claim operations</p>
-            </div>
-          </Link>
 
-          <nav className="mt-8 space-y-1">
+        {/* Sidebar — desktop */}
+        <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+          <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
+            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Zap className="size-4" aria-hidden />
+            </span>
+            <span className="text-sm font-semibold tracking-tight">ClaimFlow</span>
+          </div>
+
+          <nav className="flex-1 space-y-0.5 p-3" aria-label="Main navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -46,73 +43,84 @@ export function AppShell({
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",
+                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/15"
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <Icon className="size-4.5" />
+                  <Icon className="size-4 shrink-0" aria-hidden />
                   {item.label}
                 </Link>
               );
             })}
           </nav>
 
-          </aside>
+          <div className="border-t border-border p-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </div>
+          </div>
+        </aside>
 
+        {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                {pathname !== "/" ? (
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon-lg"
-                    className="-ml-2 shrink-0"
-                    aria-label="Go back"
-                  >
-                    <Link href={backHref}>
-                      <ArrowLeft className="size-5" />
-                    </Link>
-                  </Button>
-                ) : (
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground md:hidden">
-                    <Zap className="size-5" />
-                  </span>
+
+          {/* Sticky header */}
+          <header className="sticky top-0 z-20 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur-md sm:px-6">
+            <div className="flex flex-1 items-center gap-3">
+
+              {/* Mobile logo or back button */}
+              {pathname === "/" ? (
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground md:hidden">
+                  <Zap className="size-4" aria-hidden />
+                </span>
+              ) : (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon-sm"
+                  className="-ml-1 shrink-0"
+                  aria-label="Go back"
+                >
+                  <Link href={backHref}>
+                    <ArrowLeft className="size-4" aria-hidden />
+                  </Link>
+                </Button>
+              )}
+
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-base font-semibold tracking-tight">
+                  {title}
+                </h1>
+                {description && (
+                  <p className="hidden truncate text-xs text-muted-foreground sm:block">
+                    {description}
+                  </p>
                 )}
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <Command className="hidden size-3.5 text-primary md:block" />
-                    <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                      ClaimFlow
-                    </p>
-                  </div>
-                  <h1 className="truncate text-xl font-bold leading-tight tracking-[-0.03em] sm:text-2xl">
-                    {title}
-                  </h1>
-                  {description ? (
-                    <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
-                      {description}
-                    </p>
-                  ) : null}
-                </div>
               </div>
+            </div>
 
+            {/* Theme toggle — mobile only (desktop is in sidebar footer) */}
+            <div className="ml-2 md:hidden">
               <ThemeToggle />
             </div>
           </header>
 
-          <div className="flex-1 px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8">
-            <div className="mx-auto w-full max-w-6xl">{children}</div>
-          </div>
+          {/* Page content */}
+          <main
+            id="main-content"
+            className="flex-1 px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:px-6 lg:px-8 lg:py-8 md:pb-8"
+          >
+            <div className="mx-auto w-full max-w-5xl">{children}</div>
+          </main>
 
           <BottomNav />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

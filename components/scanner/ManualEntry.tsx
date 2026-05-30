@@ -9,35 +9,33 @@ export function ManualEntry({ onSubmit }: { onSubmit: (ticketId: string) => void
   const [ticketId, setTicketId] = useState("");
 
   function submit() {
-    if (!ticketId.trim()) {
-      return;
-    }
-
+    if (!ticketId.trim()) return;
     onSubmit(ticketId);
     setTicketId("");
   }
 
   return (
-    <div className="rounded-3xl border border-border/70 bg-card/60 p-4 shadow-sm backdrop-blur">
-      <div className="space-y-2">
-      <Label htmlFor="manual-ticket">Manual ticket ID</Label>
-      <div className="flex gap-2">
-        <Input
-          id="manual-ticket"
-          className="h-12"
-          placeholder="LUMA-12345"
-          value={ticketId}
-          onChange={(event) => setTicketId(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              submit();
-            }
-          }}
-        />
-        <Button className="h-12" onClick={submit}>
-          Check
-        </Button>
-      </div>
+    <div className="card-surface p-4">
+      <div className="space-y-3">
+        <Label htmlFor="manual-ticket" className="text-sm font-medium">
+          Manual ticket ID
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="manual-ticket"
+            className="h-10 flex-1"
+            placeholder="LUMA-12345"
+            value={ticketId}
+            autoComplete="off"
+            onChange={(e) => setTicketId(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submit();
+            }}
+          />
+          <Button className="h-10 px-5" onClick={submit}>
+            Check
+          </Button>
+        </div>
       </div>
     </div>
   );

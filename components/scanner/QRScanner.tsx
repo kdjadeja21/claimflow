@@ -48,7 +48,6 @@ export function QRScanner({
         }
         isRunningRef.current = true;
 
-        // Apply any pause that was requested before start() resolved.
         if (pausedRef.current) scanner.pause(true);
 
         // Fallback for browsers without BarcodeDetector (iOS Safari, etc.):
@@ -137,20 +136,20 @@ export function QRScanner({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative w-full overflow-hidden rounded-2xl bg-black aspect-square sm:aspect-[4/3]">
+      <div className="relative w-full overflow-hidden rounded-lg bg-zinc-950 aspect-square sm:aspect-[4/3]">
         <div id={elementId} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
         <div id={oneshotId} className="hidden" />
 
-        {/* Corner brackets */}
-        <div className="pointer-events-none absolute inset-0">
-          <span className="absolute left-5 top-5 h-8 w-8 border-l-2 border-t-2 border-lime-400" />
-          <span className="absolute right-5 top-5 h-8 w-8 border-r-2 border-t-2 border-lime-400" />
-          <span className="absolute bottom-5 left-5 h-8 w-8 border-b-2 border-l-2 border-lime-400" />
-          <span className="absolute bottom-5 right-5 h-8 w-8 border-b-2 border-r-2 border-lime-400" />
+        {/* Viewfinder corner brackets */}
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+          <span className="absolute left-6 top-6 h-7 w-7 border-l-2 border-t-2 border-primary" />
+          <span className="absolute right-6 top-6 h-7 w-7 border-r-2 border-t-2 border-primary" />
+          <span className="absolute bottom-6 left-6 h-7 w-7 border-b-2 border-l-2 border-primary" />
+          <span className="absolute bottom-6 right-6 h-7 w-7 border-b-2 border-r-2 border-primary" />
         </div>
       </div>
 
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
         {error ? "Camera unavailable — use manual entry" : "Point camera at attendee QR"}
       </p>
     </div>

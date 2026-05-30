@@ -17,8 +17,11 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full border-t border-border/60 bg-background/80 px-2 pb-3 pt-2 shadow-[0_-20px_60px_-40px_rgb(15_23_42/0.75)] backdrop-blur-xl md:hidden">
-      <div className="grid grid-cols-5 gap-1">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-2 pb-[env(safe-area-inset-bottom,8px)] pt-1 backdrop-blur-md md:hidden"
+      aria-label="Main navigation"
+    >
+      <div className="grid grid-cols-5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -27,18 +30,23 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[10.5px] font-semibold transition-all duration-200",
+                "flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-md px-1 text-[10.5px] font-medium transition-colors",
                 isActive
-                  ? "bg-primary/10 text-primary shadow-sm"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {isActive && (
-                <span className="absolute top-1.5 h-1 w-1 rounded-full bg-primary" />
-              )}
-              <Icon className={cn("size-[18px]", isActive && "mt-1")} />
-              {item.label}
+              <div
+                className={cn(
+                  "flex size-6 items-center justify-center rounded",
+                  isActive && "bg-primary/10"
+                )}
+              >
+                <Icon className="size-4" aria-hidden />
+              </div>
+              <span>{item.label}</span>
             </Link>
           );
         })}

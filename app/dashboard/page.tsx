@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppShell } from "@/components/shared/AppShell";
 import { PinGate } from "@/components/shared/PinGate";
+import { SectionHeader } from "@/components/shared/SectionHeader";
 import { ClaimFeed } from "@/components/dashboard/ClaimFeed";
 import { InventoryBar } from "@/components/dashboard/InventoryBar";
 import { StatsGrid } from "@/components/dashboard/StatsGrid";
@@ -31,9 +32,9 @@ export default function DashboardPage() {
     function refresh() {
       const event = getActiveEvent();
       setActiveEvent(event);
-      setAttendees(getAttendees().filter((attendee) => attendee.eventId === event?.eventId));
-      setClaims(getClaims().filter((claim) => claim.eventId === event?.eventId));
-      setAttempts(getScanAttempts().filter((attempt) => attempt.eventId === event?.eventId));
+      setAttendees(getAttendees().filter((a) => a.eventId === event?.eventId));
+      setClaims(getClaims().filter((c) => c.eventId === event?.eventId));
+      setAttempts(getScanAttempts().filter((a) => a.eventId === event?.eventId));
     }
 
     refresh();
@@ -58,20 +59,19 @@ export default function DashboardPage() {
     () => claims.filter((c) => enabledClaimTypeIds.has(c.claimType)),
     [claims, enabledClaimTypeIds]
   );
-
   const claimCounts = useMemo(
     () =>
-      enabledClaims.reduce<Record<string, number>>((counts, claim) => {
-        counts[claim.claimType] = (counts[claim.claimType] ?? 0) + 1;
-        return counts;
+      enabledClaims.reduce<Record<string, number>>((acc, claim) => {
+        acc[claim.claimType] = (acc[claim.claimType] ?? 0) + 1;
+        return acc;
       }, {}),
     [enabledClaims]
   );
 
-  const uniqueClaimed = new Set(enabledClaims.map((claim) => claim.ticketId.toLowerCase())).size;
-  const totalInventory = enabledClaimTypes.reduce((total, item) => total + item.inventory, 0);
+  const uniqueClaimed = new Set(enabledClaims.map((c) => c.ticketId.toLowerCase())).size;
+  const totalInventory = enabledClaimTypes.reduce((t, ct) => t + ct.inventory, 0);
   const remainingInventory = Math.max(0, totalInventory - enabledClaims.length);
-  const duplicateAttempts = attempts.filter((attempt) => attempt.status === "already_claimed").length;
+  const duplicateAttempts = attempts.filter((a) => a.status === "already_claimed").length;
 
   return (
     <AppShell title="Dashboard" description={activeEvent?.eventName ?? "Live claim analytics"}>
@@ -87,13 +87,13 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex-row items-center justify-between gap-4">
               <div>
-                <CardTitle>Inventory velocity</CardTitle>
+                <CardTitle>Inventory</CardTitle>
                 <CardDescription>Real-time usage across enabled claim categories.</CardDescription>
               </div>
               <Button asChild variant="outline" size="sm">
                 <Link href="/setup">
                   Edit
-                  <ArrowUpRight className="size-3.5" />
+                  <ArrowUpRight className="size-3.5" aria-hidden />
                 </Link>
               </Button>
             </CardHeader>
@@ -103,23 +103,19 @@ export default function DashboardPage() {
           </Card>
 
           <section className="space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                  Activity
-                </p>
-                <h2 className="mt-1 text-2xl font-bold tracking-[-0.04em]">Claim history</h2>
-                <p className="text-sm text-muted-foreground">
-                  Latest approved scans sync every second. Retries show passed vs failed counts.
-                </p>
-              </div>
-              <Button asChild variant="outline" size="sm" className="w-fit shrink-0">
-                <Link href="/attendees">
-                  Attendees
-                  <ArrowUpRight className="size-3.5" />
-                </Link>
-              </Button>
-            </div>
+            <SectionHeader
+              label="Activity"
+              title="Claim history"
+              description="Latest approved scans. Auto-refreshes every second."
+              actions={
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/attendees">
+                    Attendees
+                    <ArrowUpRight className="size-3.5" aria-hidden />
+                  </Link>
+                </Button>
+              }
+            />
             <ClaimFeed
               claims={claims}
               attendees={attendees}

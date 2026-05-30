@@ -72,20 +72,27 @@ export default function ScanPage() {
   }
 
   return (
-    <AppShell title="Scanner">
+    <AppShell title="Scanner" description="Scan or enter ticket IDs to validate claims.">
       <div className="mx-auto flex max-w-sm flex-col gap-4">
-        {/* Claim type pill toggles */}
+
+        {/* Claim type selector */}
         {claimTypes.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-label="Claim type"
+            className="flex flex-wrap gap-2"
+          >
             {claimTypes.map((item) => (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => setClaimType(item.id)}
+                aria-pressed={claimType === item.id}
                 className={cn(
-                  "rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200",
+                  "rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   claimType === item.id
-                    ? "bg-gradient-to-r from-lime-400 to-emerald-400 text-black shadow-[0_4px_16px_-4px_rgb(132_204_22/0.5)]"
-                    : "border border-border/70 bg-background/60 text-foreground backdrop-blur-sm hover:border-primary/30 hover:bg-muted/70"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "border border-border bg-background text-foreground hover:bg-muted"
                 )}
               >
                 {item.label}
@@ -93,17 +100,19 @@ export default function ScanPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            No claim types configured. Ask an organizer to set up the event.
-          </p>
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3">
+            <p className="text-sm text-muted-foreground">
+              No claim types configured. Ask an organizer to set up the event.
+            </p>
+          </div>
         )}
 
         {/* Scanner with result overlay */}
         <div className="relative">
           <QRScanner paused={Boolean(result) || !claimType} onScan={handleScan} />
-          {result ? (
+          {result && (
             <ClaimResult result={result} onReset={() => setResult(null)} />
-          ) : null}
+          )}
         </div>
 
         <ManualEntry onSubmit={handleScan} />

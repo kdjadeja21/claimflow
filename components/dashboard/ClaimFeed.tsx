@@ -1,45 +1,43 @@
 import { CheckCircle2, ExternalLink, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/shared/EmptyState";
 import type { Attendee, Claim, ClaimType, ScanAttempt } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 
 function getAttemptCounts(attempts: ScanAttempt[], claim: Claim) {
   const related = attempts.filter(
-    (attempt) =>
-      attempt.eventId === claim.eventId &&
-      attempt.claimType === claim.claimType &&
-      attempt.ticketId.toLowerCase() === claim.ticketId.toLowerCase()
+    (a) =>
+      a.eventId === claim.eventId &&
+      a.claimType === claim.claimType &&
+      a.ticketId.toLowerCase() === claim.ticketId.toLowerCase()
   );
-
-  const passed = related.filter((attempt) => attempt.status === "approved").length;
+  const passed = related.filter((a) => a.status === "approved").length;
   const failed = related.filter(
-    (attempt) => attempt.status === "already_claimed" || attempt.status === "invalid_qr"
+    (a) => a.status === "already_claimed" || a.status === "invalid_qr"
   ).length;
-
   return { passed, failed, total: related.length };
 }
 
 const AVATAR_PALETTES = [
-  "bg-blue-500/10 text-blue-500",
-  "bg-emerald-500/10 text-emerald-500",
-  "bg-violet-500/10 text-violet-500",
-  "bg-amber-500/10 text-amber-500",
-  "bg-rose-500/10 text-rose-500",
-  "bg-teal-500/10 text-teal-500",
+  "bg-blue-500/10 text-blue-600",
+  "bg-emerald-500/10 text-emerald-600",
+  "bg-violet-500/10 text-violet-600",
+  "bg-amber-500/10 text-amber-600",
+  "bg-rose-500/10 text-rose-600",
+  "bg-teal-500/10 text-teal-600",
 ];
 
 function getInitials(name: string): string {
   return name
     .split(" ")
     .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
+    .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 }
 
 function getAvatarPalette(seed: string): string {
-  const hash = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hash = seed.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   return AVATAR_PALETTES[hash % AVATAR_PALETTES.length]!;
 }
 
@@ -60,29 +58,22 @@ export function ClaimFeed({
 
   if (recentClaims.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col items-center py-14 text-center">
-          <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            0
-          </div>
-          <p className="text-sm font-semibold">No claims yet</p>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            Approved scans will appear here in real time.
-          </p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        title="No claims yet"
+        description="Approved scans will appear here in real time."
+      />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/60 shadow-sm backdrop-blur">
-      {recentClaims.map((claim) => {
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      {recentClaims.map((claim, index) => {
         const attendee = attendees.find(
-          (item) =>
-            item.eventId === claim.eventId &&
-            item.ticketId.toLowerCase() === claim.ticketId.toLowerCase()
+          (a) =>
+            a.eventId === claim.eventId &&
+            a.ticketId.toLowerCase() === claim.ticketId.toLowerCase()
         );
-        const claimType = claimTypes.find((item) => item.id === claim.claimType);
+        const claimType = claimTypes.find((ct) => ct.id === claim.claimType);
         const displayName = attendee?.name || claim.ticketId;
         const initials = getInitials(displayName);
         const avatarPalette = getAvatarPalette(claim.ticketId);
@@ -93,52 +84,57 @@ export function ClaimFeed({
         return (
           <div
             key={claim.id}
-            className="flex flex-col gap-3 border-b border-border/60 p-4 last:border-b-0 hover:bg-muted/40 sm:flex-row sm:items-center sm:gap-4"
+            className="flex items-start gap-3 border-b border-border p-4 last:border-b-0 hover:bg-muted/30 sm:items-center"
           >
-            <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
-              <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-2xl text-[11px] font-bold ${avatarPalette}`}
-              >
-                {initials || "?"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium leading-tight">{displayName}</p>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{claim.ticketId}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground/90">
-                  {formatDateTime(claim.claimedAt)}
-                </p>
-                {showAttemptCounts ? (
-                  <div
-                    className="mt-2 flex flex-wrap items-center gap-1.5"
-                    aria-label={`${passed} passed scans, ${failed} failed scans out of ${total} total`}
-                  >
-                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="size-3 shrink-0" aria-hidden />
-                      Passed {passed}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
-                      <XCircle className="size-3 shrink-0" aria-hidden />
-                      Failed {failed}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">· {total} scans</span>
-                  </div>
-                ) : null}
-              </div>
+            {/* Avatar */}
+            <div
+              className={`flex size-9 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${avatarPalette}`}
+              aria-hidden
+            >
+              {initials || "?"}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 pl-[3.25rem] sm:shrink-0 sm:pl-0">
-              <Badge variant="secondary" className="max-w-full truncate text-xs">
-                {claimType?.label ?? claim.claimType}
-              </Badge>
-              {ticketUrl ? (
-                <Button variant="outline" size="sm" asChild className="h-8 shrink-0 text-xs">
-                  <a href={ticketUrl} target="_blank" rel="noopener noreferrer">
-                    Show Ticket
-                    <ExternalLink className="size-3.5" />
-                  </a>
-                </Button>
-              ) : null}
+            {/* Info */}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <p className="text-sm font-medium leading-tight truncate">{displayName}</p>
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  {claimType?.label ?? claim.claimType}
+                </Badge>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {claim.ticketId} · {formatDateTime(claim.claimedAt)}
+              </p>
+              {showAttemptCounts && (
+                <div
+                  className="mt-1.5 flex flex-wrap items-center gap-1.5"
+                  aria-label={`${passed} passed scans, ${failed} failed scans out of ${total} total`}
+                >
+                  <span className="inline-flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
+                    <CheckCircle2 className="size-3 shrink-0" aria-hidden />
+                    {passed} passed
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-400">
+                    <XCircle className="size-3 shrink-0" aria-hidden />
+                    {failed} failed
+                  </span>
+                </div>
+              )}
             </div>
+
+            {/* Ticket link */}
+            {ticketUrl && (
+              <Button variant="ghost" size="icon-sm" asChild className="shrink-0">
+                <a
+                  href={ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ticket for ${displayName}`}
+                >
+                  <ExternalLink className="size-3.5" aria-hidden />
+                </a>
+              </Button>
+            )}
           </div>
         );
       })}

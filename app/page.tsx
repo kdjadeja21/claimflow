@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, BarChart3, QrCode, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ArrowRight, BarChart3, QrCode, Settings, ShieldCheck, Users, Zap } from "lucide-react";
 import { AppShell } from "@/components/shared/AppShell";
-import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/shared/StatCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getActiveEvent, getAttendees, getClaims, initializeClaimFlow } from "@/lib/storage";
 import type { ClaimEvent } from "@/lib/types";
 
@@ -36,106 +35,108 @@ export default function Home() {
   }, []);
 
   return (
-    <AppShell title="Command center" description="Premium QR claim verification for event teams.">
-      <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-        <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-gradient-to-br from-[color-mix(in_oklch,var(--primary)_12%,var(--card))] via-card/80 to-card/70 p-6 shadow-[0_30px_90px_-45px_color-mix(in_oklch,var(--primary)_45%,rgb(15_23_42))] backdrop-blur-xl sm:p-8 lg:p-10">
-          <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute bottom-0 left-1/2 h-40 w-80 -translate-x-1/2 rounded-full bg-[color-mix(in_oklch,var(--chart-2)_15%,transparent)] blur-3xl" />
-          <div className="relative">
-            <Badge variant="outline" className="gap-1.5">
-              <Sparkles className="size-3" />
-              Live event operations
-            </Badge>
-            <h2 className="mt-6 max-w-2xl text-4xl font-bold tracking-[-0.06em] text-balance sm:text-5xl lg:text-6xl">
+    <AppShell title="Home" description="QR claim verification for event teams.">
+      <div className="space-y-8">
+
+        {/* Welcome banner */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                <Zap className="size-4" aria-hidden />
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                ClaimFlow
+              </span>
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
               {activeEvent?.eventName ?? "My Event"}
             </h2>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Scan, validate, and distribute snacks, meals, or swag with a polished workflow
-              built for busy check-in teams.
+            <p className="mt-1 max-w-lg text-sm text-muted-foreground">
+              Scan, validate, and distribute snacks, meals, or swag with a polished workflow built for busy check-in teams.
             </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/scan">
-                  Start scanning
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/dashboard">Open dashboard</Link>
-              </Button>
-            </div>
           </div>
-        </section>
-
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-          {[
-            { label: "Claims", value: claimCount, icon: ShieldCheck },
-            { label: "Attendees", value: attendeeCount, icon: Users },
-            { label: "Remaining", value: remaining, icon: BarChart3 },
-          ].map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="hover:-translate-y-1">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    {label}
-                  </p>
-                  <span className="flex size-9 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/8 text-primary shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--primary)_35%,transparent)]">
-                    <Icon className="size-4" />
-                  </span>
-                </div>
-                <p className="mt-5 text-4xl font-bold tabular-nums tracking-[-0.05em]">
-                  {value}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="flex shrink-0 gap-2">
+            <Button asChild size="lg">
+              <Link href="/scan">
+                Start scanning
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {[
-          {
-            href: "/scan",
-            label: "Volunteer console",
-            description: "Camera-first scanner with manual fallback and instant approval states.",
-            icon: QrCode,
-          },
-          {
-            href: "/dashboard",
-            label: "Organizer dashboard",
-            description: "Live inventory, duplicate attempts, and recent activity in one view.",
-            icon: BarChart3,
-          },
-          {
-            href: "/setup",
-            label: "Event setup",
-            description: "Tune claim types, inventory, attendees, and organizer access.",
-            icon: Settings,
-          },
-        ].map((item) => {
-          const Icon = item.icon;
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <StatCard
+            label="Claims"
+            value={claimCount}
+            icon={ShieldCheck}
+            iconClassName="bg-primary/10 text-primary"
+          />
+          <StatCard
+            label="Attendees"
+            value={attendeeCount}
+            icon={Users}
+            iconClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
+          />
+          <StatCard
+            label="Remaining"
+            value={remaining}
+            icon={BarChart3}
+            iconClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+          />
+        </div>
 
-          return (
-            <Link key={item.href} href={item.href} className="group block">
-              <Card className="h-full hover:-translate-y-1.5 hover:border-primary/40">
-                <CardContent className="flex h-full flex-col p-6">
-                  <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/8 text-primary shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--primary)_35%,transparent)]">
-                    <Icon className="size-5" />
-                  </span>
-                  <h3 className="mt-5 text-lg font-bold tracking-[-0.03em]">{item.label}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">
+        {/* Navigation cards */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              href: "/scan",
+              label: "Volunteer console",
+              description: "Camera-first scanner with manual fallback and instant approval states.",
+              icon: QrCode,
+            },
+            {
+              href: "/dashboard",
+              label: "Organizer dashboard",
+              description: "Live inventory, duplicate attempts, and recent activity in one view.",
+              icon: BarChart3,
+            },
+            {
+              href: "/setup",
+              label: "Event setup",
+              description: "Tune claim types, inventory, attendees, and organizer access.",
+              icon: Settings,
+            },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group card-surface flex flex-col gap-4 p-5 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <span className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold tracking-tight">{item.label}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     {item.description}
                   </p>
-                  <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                    Open
-                    <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
-                  </span>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+                </div>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                  Open
+                  <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </AppShell>
   );

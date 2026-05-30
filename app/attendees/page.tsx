@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, Trash2, Upload } from "lucide-react";
+import { ExternalLink, Search, Trash2, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { AppShell } from "@/components/shared/AppShell";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { PinGate } from "@/components/shared/PinGate";
 import {
   addAttendee,
@@ -35,7 +36,7 @@ export default function AttendeesPage() {
   function refresh() {
     const event = getActiveEvent();
     setActiveEvent(event);
-    setAttendees(getAttendees().filter((attendee) => attendee.eventId === event?.eventId));
+    setAttendees(getAttendees().filter((a) => a.eventId === event?.eventId));
   }
 
   useEffect(() => {
@@ -48,22 +49,15 @@ export default function AttendeesPage() {
   }, []);
 
   const filteredAttendees = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    if (!normalizedQuery) {
-      return attendees;
-    }
-
-    return attendees.filter((attendee) =>
-      [attendee.ticketId, attendee.name, attendee.email].some((value) => value.toLowerCase().includes(normalizedQuery))
+    const q = query.trim().toLowerCase();
+    if (!q) return attendees;
+    return attendees.filter((a) =>
+      [a.ticketId, a.name, a.email].some((v) => v.toLowerCase().includes(q))
     );
   }, [attendees, query]);
 
   function submitAttendee() {
-    if (!activeEvent || !form.ticketId.trim()) {
-      return;
-    }
-
+    if (!activeEvent || !form.ticketId.trim()) return;
     addAttendee({
       ticketId: form.ticketId,
       name: form.name || form.ticketId,
@@ -76,25 +70,16 @@ export default function AttendeesPage() {
   }
 
   function importCsv() {
-    if (!activeEvent || !csv.trim()) {
-      return;
-    }
-
+    if (!activeEvent || !csv.trim()) return;
     const rows = csv
       .split(/\r?\n/)
-      .map((row) => row.trim())
+      .map((r) => r.trim())
       .filter(Boolean);
 
     rows.forEach((row) => {
-      const [ticketId = "", name = "", email = ""] = row.split(",").map((cell) => cell.trim());
-
+      const [ticketId = "", name = "", email = ""] = row.split(",").map((c) => c.trim());
       if (ticketId && ticketId.toLowerCase() !== "ticketid") {
-        addAttendee({
-          ticketId,
-          name: name || ticketId,
-          email,
-          eventId: activeEvent.eventId,
-        });
+        addAttendee({ ticketId, name: name || ticketId, email, eventId: activeEvent.eventId });
       }
     });
 
@@ -104,10 +89,7 @@ export default function AttendeesPage() {
   }
 
   function remove(ticketId: string) {
-    if (!activeEvent) {
-      return;
-    }
-
+    if (!activeEvent) return;
     deleteAttendee(ticketId, activeEvent.eventId);
     refresh();
   }
@@ -115,129 +97,158 @@ export default function AttendeesPage() {
   return (
     <AppShell title="Attendees" description={activeEvent?.eventName ?? "Manage event tickets"}>
       <PinGate>
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Add attendee</CardTitle>
-              <CardDescription>Ticket IDs must match the QR payload or manual entry.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="ticket-id">Ticket ID</Label>
-                <Input
-                  id="ticket-id"
-                  className="h-12"
-                  placeholder="LUMA-12345"
-                  value={form.ticketId}
-                  onChange={(event) => setForm({ ...form, ticketId: event.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attendee-name">Name</Label>
-                <Input
-                  id="attendee-name"
-                  className="h-12"
-                  placeholder="Ada Lovelace"
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="attendee-email">Email</Label>
-                <Input
-                  id="attendee-email"
-                  className="h-12"
-                  placeholder="ada@example.com"
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm({ ...form, email: event.target.value })}
-                />
-              </div>
-              <Button className="h-12 w-full" onClick={submitAttendee}>
-                Save attendee
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          <PageHeader
+            label="Directory"
+            title="Attendees"
+            description={`${attendees.length} total for this event`}
+          />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk import</CardTitle>
-              <CardDescription>Paste CSV rows in this format: ticketId,name,email.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <textarea
-                className="min-h-32 w-full rounded-2xl border border-input bg-background/70 p-3 text-sm shadow-sm outline-none transition-all placeholder:text-muted-foreground focus-visible:border-ring/70 focus-visible:ring-4 focus-visible:ring-ring/15"
-                placeholder={"ticketId,name,email\nLUMA-123,Ada,ada@example.com"}
-                value={csv}
-                onChange={(event) => setCsv(event.target.value)}
-              />
-              <Button className="h-12 w-full" variant="outline" onClick={importCsv}>
-                <Upload className="size-4" />
-                Import CSV
-              </Button>
-            </CardContent>
-          </Card>
-          </div>
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
 
-          <section className="space-y-4">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                  Directory
-                </p>
-                <h2 className="mt-1 text-2xl font-bold tracking-[-0.04em]">Attendee list</h2>
-                <p className="text-sm text-muted-foreground">{attendees.length} total</p>
-              </div>
-              <Input
-                className="h-11 max-w-48"
-                placeholder="Search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
+            {/* Left: forms */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add attendee</CardTitle>
+                  <CardDescription>
+                    Ticket IDs must match the QR payload or manual entry.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ticket-id">Ticket ID</Label>
+                    <Input
+                      id="ticket-id"
+                      className="h-10"
+                      placeholder="LUMA-12345"
+                      value={form.ticketId}
+                      onChange={(e) => setForm({ ...form, ticketId: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="attendee-name">Name</Label>
+                    <Input
+                      id="attendee-name"
+                      className="h-10"
+                      placeholder="Ada Lovelace"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="attendee-email">Email</Label>
+                    <Input
+                      id="attendee-email"
+                      className="h-10"
+                      placeholder="ada@example.com"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    />
+                  </div>
+                  <Button className="h-10 w-full" onClick={submitAttendee}>
+                    Save attendee
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bulk import</CardTitle>
+                  <CardDescription>
+                    Paste CSV rows: <code className="rounded bg-muted px-1 text-xs">ticketId,name,email</code>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <textarea
+                    className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 resize-y"
+                    placeholder={"ticketId,name,email\nLUMA-123,Ada,ada@example.com"}
+                    value={csv}
+                    aria-label="CSV import data"
+                    onChange={(e) => setCsv(e.target.value)}
+                  />
+                  <Button className="h-10 w-full" variant="outline" onClick={importCsv}>
+                    <Upload className="size-4" aria-hidden />
+                    Import CSV
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
-            <Separator />
+            {/* Right: directory */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                  <Input
+                    className="h-10 pl-9"
+                    placeholder="Search by name, ID, or email…"
+                    value={query}
+                    aria-label="Search attendees"
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                {query && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {filteredAttendees.length} result{filteredAttendees.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
 
-            <div className="space-y-3">
               {filteredAttendees.length === 0 ? (
-                <Card className="border-dashed">
-                  <CardContent className="py-14 text-center">
-                    <p className="text-sm font-semibold">No attendees found</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Add attendees manually or import a CSV to populate this event.
-                    </p>
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  icon={Users}
+                  title={query ? "No attendees match your search" : "No attendees yet"}
+                  description={
+                    query
+                      ? "Try a different name, ticket ID, or email."
+                      : "Add attendees manually or import a CSV to populate this event."
+                  }
+                />
               ) : (
-                <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/60 shadow-sm backdrop-blur">
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
                   {filteredAttendees.map((attendee) => (
                     <div
                       key={attendee.ticketId}
-                      className="flex items-center justify-between gap-3 border-b border-border/60 p-4 last:border-b-0 hover:bg-muted/40"
+                      className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0 hover:bg-muted/30"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{attendee.name || attendee.ticketId}</p>
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                          {attendee.ticketId} · {attendee.email || "No email"}
+                        <p className="truncate text-sm font-medium">
+                          {attendee.name || attendee.ticketId}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {attendee.ticketId}
+                          {attendee.email ? ` · ${attendee.email}` : ""}
                         </p>
                       </div>
-                      {attendee.lumaTicketUrl ? (
-                        <Button variant="ghost" size="icon-lg" asChild>
+                      {attendee.lumaTicketUrl && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          asChild
+                          aria-label={`View ticket for ${attendee.name || attendee.ticketId}`}
+                        >
                           <a href={attendee.lumaTicketUrl} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="size-4" />
+                            <ExternalLink className="size-3.5" aria-hidden />
                           </a>
                         </Button>
-                      ) : null}
-                      <Button variant="ghost" size="icon-lg" onClick={() => remove(attendee.ticketId)}>
-                        <Trash2 className="size-4" />
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove ${attendee.name || attendee.ticketId}`}
+                        onClick={() => remove(attendee.ticketId)}
+                      >
+                        <Trash2 className="size-3.5" aria-hidden />
                       </Button>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-          </section>
+            </section>
+          </div>
         </div>
       </PinGate>
     </AppShell>

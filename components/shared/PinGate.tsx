@@ -29,7 +29,6 @@ export function PinGate({ children }: { children: React.ReactNode }) {
       setError("");
       return;
     }
-
     setError("Incorrect PIN. The default PIN is 1234.");
   }
 
@@ -38,18 +37,18 @@ export function PinGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="grid min-h-[65dvh] place-items-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="items-center pb-4 text-center">
-          <div className="mb-3 flex size-14 items-center justify-center rounded-3xl bg-primary/10 shadow-inner">
-            <Lock className="size-5 text-primary" />
+    <div className="grid min-h-[60dvh] place-items-center px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="items-center pb-2 text-center">
+          <div className="mb-3 flex size-12 items-center justify-center rounded-lg bg-muted">
+            <Lock className="size-5 text-muted-foreground" aria-hidden />
           </div>
           <CardTitle>Organizer access</CardTitle>
           <CardDescription>Enter the 4-digit organizer PIN to continue.</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="organizer-pin">PIN</Label>
             <Input
               id="organizer-pin"
@@ -57,24 +56,26 @@ export function PinGate({ children }: { children: React.ReactNode }) {
               maxLength={4}
               placeholder="• • • •"
               type="password"
-              className="h-14 text-center text-xl tracking-[0.4em]"
+              className="h-12 text-center text-xl tracking-[0.4em]"
               value={pin}
-              onChange={(event) => setPin(event.target.value.replace(/\D/g, ""))}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  unlock();
-                }
+              autoFocus
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") unlock();
               }}
             />
           </div>
 
-          {error ? (
-            <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+          {error && (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/20 bg-destructive/8 px-3 py-2 text-sm text-destructive"
+            >
               {error}
             </p>
-          ) : null}
+          )}
 
-          <Button className="h-12 w-full" onClick={unlock}>
+          <Button className="h-10 w-full" onClick={unlock}>
             Unlock
           </Button>
         </CardContent>
