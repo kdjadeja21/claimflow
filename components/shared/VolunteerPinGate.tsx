@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { KeyRound } from "lucide-react";
 import { verifyPin } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,20 @@ interface VolunteerPinGateProps {
 
 const SESSION_KEY = (slug: string) => `claimflow:vol-pin:${slug}`;
 
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+function useVolunteerSessionUnlocked(slug: string) {
+  const getSnapshot = useCallback(
+    () => window.sessionStorage.getItem(SESSION_KEY(slug)) === "true",
+    [slug]
+  );
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => false);
+}
+
 export function VolunteerPinGate({
   pinHash,
   slug,
@@ -24,18 +38,11 @@ export function VolunteerPinGate({
   children,
 }: VolunteerPinGateProps) {
   const [pin, setPin] = useState("");
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [localUnlock, setLocalUnlock] = useState(false);
+  const sessionUnlocked = useVolunteerSessionUnlocked(slug);
+  const isUnlocked = localUnlock || sessionUnlocked;
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setIsUnlocked(
-      typeof window !== "undefined" &&
-        window.sessionStorage.getItem(SESSION_KEY(slug)) === "true"
-    );
-    setReady(true);
-  }, [slug]);
 
   async function unlock() {
     if (!pin) return;
@@ -44,7 +51,7 @@ export function VolunteerPinGate({
       const ok = await verifyPin(pin, pinHash);
       if (ok) {
         window.sessionStorage.setItem(SESSION_KEY(slug), "true");
-        setIsUnlocked(true);
+        setLocalUnlock(true);
         setError("");
       } else {
         setError("Incorrect PIN. Check with the event organizer.");
@@ -56,7 +63,6 @@ export function VolunteerPinGate({
     }
   }
 
-  if (!ready) return null;
   if (isUnlocked) return <>{children}</>;
 
   return (

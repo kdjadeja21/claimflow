@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AuthProvider } from "@/lib/auth";
-import { RouteLoader } from "@/components/shared/RouteLoader";
-import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import { ActiveEventDocumentTitle } from "@/components/providers/ActiveEventDocumentTitle";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { RouteLoader } from "@/components/providers/RouteLoader";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body className="min-h-full">
         <ThemeProvider>
           <AuthProvider>
+            <ActiveEventDocumentTitle />
             <RouteLoader />
             {children}
             <Toaster position="top-center" richColors />

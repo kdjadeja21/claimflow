@@ -138,26 +138,31 @@ ClaimFlow accepts several QR payload formats:
 
 ```
 app/
-  page.tsx                  # Home / command center (active event)
-  login/page.tsx            # Google Sign-In
-  dashboard/page.tsx        # Event picker landing page
-  events/page.tsx           # Event list and creation
-  scan/page.tsx             # Organizer scanner
-  stats/page.tsx            # Live analytics dashboard
-  setup/page.tsx            # Event configuration and sharing
-  attendees/page.tsx        # Attendee management
-  e/[slug]/                 # Public volunteer routes (home, scan, stats)
-  layout.tsx                # Root layout, auth, and theme providers
+  layout.tsx                # Root layout, providers, global styles
+  login/page.tsx            # Google Sign-In (public)
+  (organizer)/              # Auth-gated organizer routes (URLs unchanged)
+    layout.tsx              # AuthGate wrapper
+    page.tsx                # Home / command center
+    dashboard/  events/  scan/  stats/  setup/  attendees/
+  (public)/
+    e/[slug]/               # Public volunteer routes (home, scan, stats)
 components/
+  providers/                # AuthProvider, ThemeProvider, PublicEventProvider, RouteLoader
+  layout/                   # AppShell, BottomNav, UserMenu, ThemeToggle
   dashboard/                # StatsGrid, InventoryBar, ClaimFeed
   events/                   # EventCard
-  scanner/                  # QRScanner, ManualEntry, ClaimResult
-  shared/                   # AppShell, BottomNav, AuthGate, VolunteerPinGate, ThemeToggle
+  scanner/                  # QRScanner, ManualEntry, ClaimResult, ScannerPanel
+  shared/                   # AuthGate, VolunteerPinGate, EmptyState, StatCard, …
   ui/                       # shadcn/ui primitives
+hooks/
+  useActiveEvent.ts         # Active event bootstrap for organizer pages
+  useEventData.ts           # Real-time Firestore subscription
+  useEventStats.ts          # Derived stats (inventory, claims, duplicates)
+  useClaimScanner.ts        # Shared scan/validate flow
 lib/
   firebase.ts               # Firebase app, auth, and Firestore init
-  db.ts                     # Firestore CRUD, subscriptions, claim validation
-  auth.tsx                  # Google Sign-In context
+  db/                       # Firestore CRUD split by domain (events, attendees, claims, subscriptions)
+  constants.ts              # Default claim types, scan timeouts, vibration patterns
   types.ts                  # TypeScript interfaces
   utils.ts                  # QR parsing, formatting, helpers
 firestore.rules             # Firestore security rules

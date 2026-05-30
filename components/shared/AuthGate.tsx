@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { PageLoader } from "@/components/shared/PageLoader";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {

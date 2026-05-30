@@ -19,8 +19,10 @@ export function QRScanner({
   const invertTimerRef = useRef<number | null>(null);
   const [error, setError] = useState("");
 
-  onScanRef.current = onScan;
-  pausedRef.current = paused;
+  useEffect(() => {
+    onScanRef.current = onScan;
+    pausedRef.current = paused;
+  }, [onScan, paused]);
 
   useEffect(() => {
     let cancelled = false;
