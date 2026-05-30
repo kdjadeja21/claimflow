@@ -2,27 +2,53 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Home, QrCode, Settings, Users } from "lucide-react";
+import { BarChart3, Calendar, Home, QrCode, Settings, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { NavMode } from "@/components/shared/AppShell";
 
-export const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+}
+
+export const organizerNavItems: NavItem[] = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/events", label: "Events", icon: Calendar },
   { href: "/scan", label: "Scan", icon: QrCode },
-  { href: "/dashboard", label: "Stats", icon: BarChart3 },
+  { href: "/stats", label: "Stats", icon: BarChart3 },
   { href: "/setup", label: "Setup", icon: Settings },
   { href: "/attendees", label: "People", icon: Users },
 ];
 
-export function BottomNav() {
+export function publicNavItems(slug: string): NavItem[] {
+  return [
+    { href: `/e/${slug}`, label: "Home", icon: Home },
+    { href: `/e/${slug}/scan`, label: "Scan", icon: QrCode },
+    { href: `/e/${slug}/stats`, label: "Stats", icon: BarChart3 },
+  ];
+}
+
+export function BottomNav({
+  navMode = "organizer",
+  slug,
+}: {
+  navMode?: NavMode;
+  slug?: string;
+}) {
   const pathname = usePathname();
+  const items =
+    navMode === "public"
+      ? publicNavItems(slug ?? "")
+      : organizerNavItems;
 
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-2 pb-[env(safe-area-inset-bottom,8px)] pt-1 backdrop-blur-md md:hidden"
       aria-label="Main navigation"
     >
-      <div className="grid grid-cols-5">
-        {navItems.map((item) => {
+      <div className={cn("grid", navMode === "public" ? "grid-cols-3" : "grid-cols-6")}>
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

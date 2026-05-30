@@ -12,6 +12,10 @@ export interface ClaimEvent {
   eventName: string;
   claimTypes: ClaimType[];
   createdAt: string;
+  ownerUid: string;
+  isPublic: boolean;
+  publicSlug?: string;
+  pinHash?: string;
 }
 
 export interface Attendee {
@@ -53,4 +57,11 @@ export interface ClaimValidationResult {
   message: string;
   attendee?: Attendee;
   claim?: Claim;
+}
+
+export interface EventData {
+  event: ClaimEvent;
+  claims: Claim[];
+  attempts: ScanAttempt[];
+  attendees: Attendee[];
 }

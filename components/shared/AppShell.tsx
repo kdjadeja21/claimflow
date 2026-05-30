@@ -4,22 +4,37 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BottomNav, navItems } from "@/components/shared/BottomNav";
+import { BottomNav, organizerNavItems, publicNavItems } from "@/components/shared/BottomNav";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { UserMenu } from "@/components/shared/UserMenu";
 import { cn } from "@/lib/utils";
+
+export type NavMode = "organizer" | "public";
+
+interface AppShellProps {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  backHref?: string;
+  navMode?: NavMode;
+  /** Slug for public nav link resolution (required when navMode="public") */
+  slug?: string;
+}
 
 export function AppShell({
   title,
   description,
   children,
   backHref = "/",
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-  backHref?: string;
-}) {
+  navMode = "organizer",
+  slug,
+}: AppShellProps) {
   const pathname = usePathname();
+
+  const navItems =
+    navMode === "public"
+      ? publicNavItems(slug ?? "")
+      : organizerNavItems;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -74,7 +89,7 @@ export function AppShell({
             <div className="flex flex-1 items-center gap-3">
 
               {/* Mobile logo or back button */}
-              {pathname === "/" ? (
+              {pathname === "/" || (slug && pathname === `/e/${slug}`) ? (
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground md:hidden">
                   <Zap className="size-4" aria-hidden />
                 </span>
@@ -104,9 +119,11 @@ export function AppShell({
               </div>
             </div>
 
-            {/* Theme toggle — mobile only (desktop is in sidebar footer) */}
-            <div className="ml-2 md:hidden">
-              <ThemeToggle />
+            <div className="ml-2 flex shrink-0 items-center gap-1">
+              {navMode === "organizer" && <UserMenu />}
+              <div className={navMode === "organizer" ? "md:hidden" : undefined}>
+                <ThemeToggle />
+              </div>
             </div>
           </header>
 
@@ -118,7 +135,7 @@ export function AppShell({
             <div className="mx-auto w-full max-w-5xl">{children}</div>
           </main>
 
-          <BottomNav />
+          <BottomNav navMode={navMode} slug={slug} />
         </div>
       </div>
     </div>

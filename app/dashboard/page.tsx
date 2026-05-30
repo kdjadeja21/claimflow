@@ -1,130 +1,200 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Calendar, Plus, Zap } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import {
+  createEvent,
+  getMyEvents,
+  setUserActiveEventId,
+} from "@/lib/db";
+import { AuthGate } from "@/components/shared/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AppShell } from "@/components/shared/AppShell";
-import { PinGate } from "@/components/shared/PinGate";
-import { SectionHeader } from "@/components/shared/SectionHeader";
-import { ClaimFeed } from "@/components/dashboard/ClaimFeed";
-import { InventoryBar } from "@/components/dashboard/InventoryBar";
-import { StatsGrid } from "@/components/dashboard/StatsGrid";
 import {
-  getActiveEvent,
-  getAttendees,
-  getClaims,
-  getScanAttempts,
-  initializeClaimFlow,
-} from "@/lib/storage";
-import type { Attendee, Claim, ClaimEvent, ScanAttempt } from "@/lib/types";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { EventCard } from "@/components/events/EventCard";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import type { ClaimEvent } from "@/lib/types";
 
-export default function DashboardPage() {
-  const [activeEvent, setActiveEvent] = useState<ClaimEvent | null>(null);
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
-  const [claims, setClaims] = useState<Claim[]>([]);
-  const [attempts, setAttempts] = useState<ScanAttempt[]>([]);
+function DashboardContent() {
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const [events, setEvents] = useState<ClaimEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
-    initializeClaimFlow();
+    if (!user) return;
+    getMyEvents(user.uid)
+      .then(setEvents)
+      .catch((err) => {
+        console.error(err);
+        toast.error("Could not load your events. Please try again.");
+      })
+      .finally(() => setLoading(false));
+  }, [user]);
 
-    function refresh() {
-      const event = getActiveEvent();
-      setActiveEvent(event);
-      setAttendees(getAttendees().filter((a) => a.eventId === event?.eventId));
-      setClaims(getClaims().filter((c) => c.eventId === event?.eventId));
-      setAttempts(getScanAttempts().filter((a) => a.eventId === event?.eventId));
+  async function handleCreate() {
+    if (!user || !newName.trim()) return;
+    setCreating(true);
+    try {
+      const event = await createEvent(newName.trim(), user.uid);
+      await setUserActiveEventId(user.uid, event.eventId);
+      setDialogOpen(false);
+      router.push("/setup");
+    } catch {
+      toast.error("Failed to create event");
+    } finally {
+      setCreating(false);
     }
+  }
 
-    refresh();
-    const interval = window.setInterval(refresh, 1000);
-    window.addEventListener("claimflow:data-change", refresh);
-
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("claimflow:data-change", refresh);
-    };
-  }, []);
-
-  const enabledClaimTypes = useMemo(
-    () => (activeEvent?.claimTypes ?? []).filter((ct) => ct.enabled),
-    [activeEvent]
-  );
-  const enabledClaimTypeIds = useMemo(
-    () => new Set(enabledClaimTypes.map((ct) => ct.id)),
-    [enabledClaimTypes]
-  );
-  const enabledClaims = useMemo(
-    () => claims.filter((c) => enabledClaimTypeIds.has(c.claimType)),
-    [claims, enabledClaimTypeIds]
-  );
-  const claimCounts = useMemo(
-    () =>
-      enabledClaims.reduce<Record<string, number>>((acc, claim) => {
-        acc[claim.claimType] = (acc[claim.claimType] ?? 0) + 1;
-        return acc;
-      }, {}),
-    [enabledClaims]
-  );
-
-  const uniqueClaimed = new Set(enabledClaims.map((c) => c.ticketId.toLowerCase())).size;
-  const totalInventory = enabledClaimTypes.reduce((t, ct) => t + ct.inventory, 0);
-  const remainingInventory = Math.max(0, totalInventory - enabledClaims.length);
-  const duplicateAttempts = attempts.filter((a) => a.status === "already_claimed").length;
+  async function handleSelect(event: ClaimEvent) {
+    if (!user) return;
+    try {
+      await setUserActiveEventId(user.uid, event.eventId);
+      router.push("/");
+    } catch {
+      toast.error("Failed to select event");
+    }
+  }
 
   return (
-    <AppShell title="Dashboard" description={activeEvent?.eventName ?? "Live claim analytics"}>
-      <PinGate>
-        <div className="space-y-6">
-          <StatsGrid
-            totalAttendees={attendees.length}
-            uniqueClaimed={uniqueClaimed}
-            remainingInventory={remainingInventory}
-            duplicateAttempts={duplicateAttempts}
-          />
-
-          <Card>
-            <CardHeader className="flex-row items-center justify-between gap-4">
-              <div>
-                <CardTitle>Inventory</CardTitle>
-                <CardDescription>Real-time usage across enabled claim categories.</CardDescription>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/setup">
-                  Edit
-                  <ArrowUpRight className="size-3.5" aria-hidden />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <InventoryBar claimTypes={enabledClaimTypes} claimCounts={claimCounts} />
-            </CardContent>
-          </Card>
-
-          <section className="space-y-3">
-            <SectionHeader
-              label="Activity"
-              title="Claim history"
-              description="Latest approved scans. Auto-refreshes every second."
-              actions={
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/attendees">
-                    Attendees
-                    <ArrowUpRight className="size-3.5" aria-hidden />
-                  </Link>
-                </Button>
-              }
-            />
-            <ClaimFeed
-              claims={claims}
-              attendees={attendees}
-              claimTypes={activeEvent?.claimTypes ?? []}
-              attempts={attempts}
-            />
-          </section>
+    <div className="min-h-dvh bg-background">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Zap className="size-4" aria-hidden />
+            </span>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight">ClaimFlow</h1>
+              <p className="text-xs text-muted-foreground">{user?.displayName ?? user?.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              Sign out
+            </Button>
+          </div>
         </div>
-      </PinGate>
-    </AppShell>
+
+        {/* My Events */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">My Events</h2>
+              <p className="text-sm text-muted-foreground">
+                Select an event to manage, or create a new one.
+              </p>
+            </div>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="shrink-0">
+                  <Plus className="size-4" aria-hidden />
+                  New event
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create event</DialogTitle>
+                  <DialogDescription>
+                    Give your event a name. You&apos;ll configure claim types and
+                    share settings on the next screen.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-1.5 py-2">
+                  <Label htmlFor="event-name">Event name</Label>
+                  <Input
+                    id="event-name"
+                    className="h-10"
+                    placeholder="e.g. Annual Gala 2026"
+                    value={newName}
+                    autoFocus
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={!newName.trim() || creating}
+                  >
+                    {creating ? "Creating…" : "Create & configure"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 animate-pulse rounded-xl border border-border bg-muted/40"
+                />
+              ))}
+            </div>
+          ) : events.length === 0 ? (
+            <Card className="border-dashed">
+              <CardHeader className="items-center pb-2 text-center">
+                <span className="mb-2 flex size-12 items-center justify-center rounded-lg bg-muted">
+                  <Calendar className="size-5 text-muted-foreground" aria-hidden />
+                </span>
+                <CardTitle className="text-base">No events yet</CardTitle>
+                <CardDescription>
+                  Create your first event to get started.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center pb-6">
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="size-4" aria-hidden />
+                  Create event
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {events.map((event) => (
+                <EventCard
+                  key={event.eventId}
+                  event={event}
+                  onSelect={() => handleSelect(event)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGate>
+      <DashboardContent />
+    </AuthGate>
   );
 }

@@ -38,6 +38,8 @@ export function createDefaultEvent(): ClaimEvent {
     eventName: "Community Meetup",
     claimTypes: DEFAULT_CLAIM_TYPES,
     createdAt: new Date().toISOString(),
+    ownerUid: "",
+    isPublic: false,
   };
 }
 

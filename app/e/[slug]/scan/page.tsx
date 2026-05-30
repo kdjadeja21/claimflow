@@ -1,66 +1,42 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/auth";
-import {
-  addAttendee,
-  getUserActiveEventId,
-  validateAndRecordClaim,
-  getEventById,
-} from "@/lib/db";
-import { AuthGate } from "@/components/shared/AuthGate";
+import { addAttendee, validateAndRecordClaim } from "@/lib/db";
+import { usePublicEvent } from "@/app/e/[slug]/layout";
 import { AppShell } from "@/components/shared/AppShell";
+import { VolunteerPinGate } from "@/components/shared/VolunteerPinGate";
 import { ClaimResult } from "@/components/scanner/ClaimResult";
 import { ManualEntry } from "@/components/scanner/ManualEntry";
 import { QRScanner } from "@/components/scanner/QRScanner";
-import type { ClaimEvent, ClaimType, ClaimValidationResult } from "@/lib/types";
-import { parseQRPayload } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import type { ClaimValidationResult } from "@/lib/types";
+import { cn, parseQRPayload } from "@/lib/utils";
 
-function ScanContent() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [event, setEvent] = useState<ClaimEvent | null>(null);
+function ScannerContent({ pinHash }: { pinHash: string }) {
+  const { event, slug } = usePublicEvent();
   const [claimType, setClaimType] = useState("");
   const [result, setResult] = useState<ClaimValidationResult | null>(null);
   const [lastTicketId, setLastTicketId] = useState("");
 
-  useEffect(() => {
-    if (!user) return;
-    getUserActiveEventId(user.uid).then((id) => {
-      if (!id) {
-        router.replace("/dashboard");
-        return;
-      }
-      getEventById(id).then((ev) => {
-        if (!ev) {
-          router.replace("/dashboard");
-          return;
-        }
-        setEvent(ev);
-        const first = ev.claimTypes.find((ct) => ct.enabled);
-        setClaimType(first?.id ?? "");
-      });
-    });
-  }, [user, router]);
-
-  useEffect(() => {
-    if (!result) return;
-    const timeout = window.setTimeout(() => setResult(null), 3000);
-    return () => window.clearTimeout(timeout);
-  }, [result]);
-
   const enabledClaimTypes = useMemo(
-    () => (event?.claimTypes ?? []).filter((ct) => ct.enabled),
+    () => event.claimTypes.filter((ct) => ct.enabled),
     [event]
   );
 
-  async function handleScan(payload: string) {
-    if (!event) return;
-    const { ticketId, lumaTicketUrl } = parseQRPayload(payload);
+  useEffect(() => {
+    if (!claimType && enabledClaimTypes.length > 0) {
+      setClaimType(enabledClaimTypes[0]!.id);
+    }
+  }, [enabledClaimTypes, claimType]);
 
+  useEffect(() => {
+    if (!result) return;
+    const t = window.setTimeout(() => setResult(null), 3000);
+    return () => window.clearTimeout(t);
+  }, [result]);
+
+  async function handleScan(payload: string) {
+    const { ticketId, lumaTicketUrl } = parseQRPayload(payload);
     if (!ticketId || !claimType || ticketId === lastTicketId) return;
 
     setLastTicketId(ticketId);
@@ -70,7 +46,7 @@ function ScanContent() {
       const nextResult = await validateAndRecordClaim(
         ticketId,
         claimType,
-        user?.displayName || user?.email || "Volunteer",
+        "Volunteer",
         event.eventId,
         lumaTicketUrl
       );
@@ -96,16 +72,12 @@ function ScanContent() {
   }
 
   return (
-    <AppShell title="Scanner" description="Scan or enter ticket IDs to validate claims.">
+    <VolunteerPinGate pinHash={pinHash} slug={slug} eventName={event.eventName}>
       <div className="mx-auto flex max-w-sm flex-col gap-4">
 
         {/* Claim type selector */}
         {enabledClaimTypes.length > 0 ? (
-          <div
-            role="group"
-            aria-label="Claim type"
-            className="flex flex-wrap gap-2"
-          >
+          <div role="group" aria-label="Claim type" className="flex flex-wrap gap-2">
             {enabledClaimTypes.map((item) => (
               <button
                 key={item.id}
@@ -126,7 +98,7 @@ function ScanContent() {
         ) : (
           <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3">
             <p className="text-sm text-muted-foreground">
-              No claim types configured. Go to Setup to add some.
+              No claim types are active for this event.
             </p>
           </div>
         )}
@@ -141,14 +113,40 @@ function ScanContent() {
 
         <ManualEntry onSubmit={handleScan} />
       </div>
-    </AppShell>
+    </VolunteerPinGate>
   );
 }
 
-export default function ScanPage() {
+export default function PublicScanPage() {
+  const { event, slug } = usePublicEvent();
+
+  if (!event.pinHash) {
+    return (
+      <AppShell
+        title="Scanner"
+        description={event.eventName}
+        navMode="public"
+        slug={slug}
+        backHref={`/e/${slug}`}
+      >
+        <div className="flex h-48 items-center justify-center">
+          <p className="text-sm text-muted-foreground">
+            This event has not been set up for volunteer scanning.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
-    <AuthGate>
-      <ScanContent />
-    </AuthGate>
+    <AppShell
+      title="Scanner"
+      description={event.eventName}
+      navMode="public"
+      slug={slug}
+      backHref={`/e/${slug}`}
+    >
+      <ScannerContent pinHash={event.pinHash} />
+    </AppShell>
   );
 }

@@ -1,0 +1,60 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users ──────────────────────────────────────────────────────────────
+    // Organizers can only read/write their own user doc.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ── Events ─────────────────────────────────────────────────────────────
+    match /events/{eventId} {
+
+      // Organizer: full access to their own events.
+      allow read, write: if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
+
+      // Create: only authenticated users, must set ownerUid to themselves.
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      // Public read: event must be explicitly marked public.
+      allow read: if resource.data.isPublic == true;
+
+      // ── Attendees ──────────────────────────────────────────────────────
+      match /attendees/{ticketId} {
+        // Organizer: full access.
+        allow read, write: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/events/$(eventId)).data.ownerUid;
+
+        // Public event: anyone can read attendees (for name lookup during scan).
+        allow read: if get(/databases/$(database)/documents/events/$(eventId)).data.isPublic == true;
+
+        // Volunteers (anonymous) can upsert attendees on public events during scanning.
+        allow create, update: if get(/databases/$(database)/documents/events/$(eventId)).data.isPublic == true;
+      }
+
+      // ── Claims ─────────────────────────────────────────────────────────
+      match /claims/{claimId} {
+        // Organizer: full access.
+        allow read, write: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/events/$(eventId)).data.ownerUid;
+
+        // Public event: anyone can read and create claims (volunteer scanning).
+        allow read, create: if get(/databases/$(database)/documents/events/$(eventId)).data.isPublic == true;
+      }
+
+      // ── Scan Attempts ──────────────────────────────────────────────────
+      match /attempts/{attemptId} {
+        // Organizer: full access.
+        allow read, write: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/events/$(eventId)).data.ownerUid;
+
+        // Public event: anyone can read and create attempts.
+        allow read, create: if get(/databases/$(database)/documents/events/$(eventId)).data.isPublic == true;
+      }
+    }
+  }
+}

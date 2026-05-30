@@ -2,37 +2,58 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, BarChart3, QrCode, Settings, ShieldCheck, Users, Zap } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import {
+  getUserActiveEventId,
+  subscribeToEventData,
+} from "@/lib/db";
+import { AuthGate } from "@/components/shared/AuthGate";
 import { AppShell } from "@/components/shared/AppShell";
 import { StatCard } from "@/components/shared/StatCard";
 import { Button } from "@/components/ui/button";
-import { getActiveEvent, getAttendees, getClaims, initializeClaimFlow } from "@/lib/storage";
-import type { ClaimEvent } from "@/lib/types";
+import type { Claim, ClaimEvent } from "@/lib/types";
 
-export default function Home() {
+function HomeContent() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [activeEvent, setActiveEvent] = useState<ClaimEvent | null>(null);
   const [attendeeCount, setAttendeeCount] = useState(0);
   const [claimCount, setClaimCount] = useState(0);
   const [remaining, setRemaining] = useState(0);
+  const [eventId, setEventId] = useState<string | null>(null);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      initializeClaimFlow();
-      const event = getActiveEvent();
-      const eventAttendees = getAttendees().filter((a) => a.eventId === event?.eventId);
-      const eventClaims = getClaims().filter((c) => c.eventId === event?.eventId);
-      const enabledClaimTypeIds = new Set((event?.claimTypes ?? []).filter((c) => c.enabled).map((c) => c.id));
-      const totalInventory = (event?.claimTypes ?? []).filter((c) => c.enabled).reduce((t, c) => t + c.inventory, 0);
-      const enabledClaims = eventClaims.filter((c) => enabledClaimTypeIds.has(c.claimType));
+    if (!user) return;
+    getUserActiveEventId(user.uid).then((id) => {
+      if (!id) {
+        router.replace("/dashboard");
+        return;
+      }
+      setEventId(id);
+    });
+  }, [user, router]);
 
+  useEffect(() => {
+    if (!eventId) return;
+    const unsub = subscribeToEventData(eventId, ({ event, claims, attendees }) => {
       setActiveEvent(event);
-      setAttendeeCount(eventAttendees.length);
+      setAttendeeCount(attendees.length);
+
+      const enabledIds = new Set(
+        (event?.claimTypes ?? []).filter((c) => c.enabled).map((c) => c.id)
+      );
+      const totalInventory = (event?.claimTypes ?? [])
+        .filter((c) => c.enabled)
+        .reduce((t, c) => t + c.inventory, 0);
+      const enabledClaims: Claim[] = claims.filter((c) => enabledIds.has(c.claimType));
+
       setClaimCount(enabledClaims.length);
       setRemaining(Math.max(0, totalInventory - enabledClaims.length));
-    }, 0);
-
-    return () => window.clearTimeout(timeout);
-  }, []);
+    });
+    return unsub;
+  }, [eventId]);
 
   return (
     <AppShell title="Home" description="QR claim verification for event teams.">
@@ -64,7 +85,7 @@ export default function Home() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard">Dashboard</Link>
+              <Link href="/stats">Dashboard</Link>
             </Button>
           </div>
         </div>
@@ -101,7 +122,7 @@ export default function Home() {
               icon: QrCode,
             },
             {
-              href: "/dashboard",
+              href: "/stats",
               label: "Organizer dashboard",
               description: "Live inventory, duplicate attempts, and recent activity in one view.",
               icon: BarChart3,
@@ -109,7 +130,7 @@ export default function Home() {
             {
               href: "/setup",
               label: "Event setup",
-              description: "Tune claim types, inventory, attendees, and organizer access.",
+              description: "Tune claim types, inventory, and share a volunteer link.",
               icon: Settings,
             },
           ].map((item) => {
@@ -139,5 +160,13 @@ export default function Home() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthGate>
+      <HomeContent />
+    </AuthGate>
   );
 }

@@ -10,7 +10,7 @@ export function RouteLoader() {
   const isLoading = loadingPath !== null && loadingPath !== pathname;
 
   useEffect(() => {
-    let timeoutId: ReturnType<typeof window.setTimeout> | undefined;
+    let timeoutId: number | undefined;
 
     function startLoading(nextPath: string) {
       window.clearTimeout(timeoutId);
