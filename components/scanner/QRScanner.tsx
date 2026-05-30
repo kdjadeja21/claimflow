@@ -13,10 +13,12 @@ export function QRScanner({
   const elementId = useId().replaceAll(":", "");
   const oneshotId = `${elementId}-oneshot`;
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const oneshotRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
   const onScanRef = useRef(onScan);
   const pausedRef = useRef(paused);
   const invertTimerRef = useRef<number | null>(null);
+  const invertBusyRef = useRef(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -34,12 +36,31 @@ export function QRScanner({
     });
     scannerRef.current = scanner;
 
-    const handleDecoded = (decoded: string) => onScanRef.current(decoded);
+    // Drop decodes once we're torn down or the result overlay has paused us,
+    // so a late callback never updates an unmounted/paused tree.
+    const handleDecoded = (decoded: string) => {
+      if (cancelled || pausedRef.current) return;
+      onScanRef.current(decoded);
+    };
+
+    // Native BarcodeDetector (Chrome/Android, newer Safari) handles the live
+    // stream including inverted codes, so the costly per-frame fallback is
+    // only needed where it's missing (older iOS Safari, etc.).
+    const hasBarcodeDetector =
+      typeof window !== "undefined" && "BarcodeDetector" in window;
+
+    // Responsive scan box: a fixed 260px box can exceed the video on small
+    // viewports and make start() reject. Derive it from the viewfinder.
+    const qrbox = (viewfinderWidth: number, viewfinderHeight: number) => {
+      const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.8);
+      const size = Math.max(160, Math.min(edge, 320));
+      return { width: size, height: size };
+    };
 
     scanner
       .start(
         { facingMode: "environment" },
-        { fps: 12, qrbox: { width: 260, height: 260 }, aspectRatio: 1 },
+        { fps: 12, qrbox, aspectRatio: 1 },
         handleDecoded,
         () => {},
       )
@@ -50,53 +71,65 @@ export function QRScanner({
         }
         isRunningRef.current = true;
 
-        if (pausedRef.current) scanner.pause(true);
+        // Honor pause intent requested before start() resolved.
+        if (pausedRef.current) {
+          try {
+            scanner.pause(true);
+          } catch {
+            /* ignore */
+          }
+        }
+
+        if (hasBarcodeDetector) return;
 
         // Fallback for browsers without BarcodeDetector (iOS Safari, etc.):
         // periodically grab a frame, invert it, and try decoding via the
         // library's still-image API. Catches white-on-dark QR codes.
+        const oneShot = new Html5Qrcode(oneshotId, {
+          verbose: false,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        });
+        oneshotRef.current = oneShot;
+
         const tryInverted = async () => {
+          // Skip while paused, torn down, or a previous tick is still running.
+          if (cancelled || pausedRef.current || invertBusyRef.current) return;
           const video = document.querySelector(`#${elementId} video`) as HTMLVideoElement | null;
           if (!video || video.readyState < 2) return;
           const w = video.videoWidth;
           const h = video.videoHeight;
           if (!w || !h) return;
-          const canvas = document.createElement("canvas");
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-          ctx.drawImage(video, 0, 0, w, h);
-          const img = ctx.getImageData(0, 0, w, h);
-          const d = img.data;
-          for (let i = 0; i < d.length; i += 4) {
-            d[i] = 255 - d[i];
-            d[i + 1] = 255 - d[i + 1];
-            d[i + 2] = 255 - d[i + 2];
+
+          invertBusyRef.current = true;
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (!ctx) return;
+            ctx.drawImage(video, 0, 0, w, h);
+            const img = ctx.getImageData(0, 0, w, h);
+            const d = img.data;
+            for (let i = 0; i < d.length; i += 4) {
+              d[i] = 255 - d[i];
+              d[i + 1] = 255 - d[i + 1];
+              d[i + 2] = 255 - d[i + 2];
+            }
+            ctx.putImageData(img, 0, 0);
+            const blob = await new Promise<Blob | null>((resolve) =>
+              canvas.toBlob((b) => resolve(b), "image/png"),
+            );
+            if (!blob || cancelled || pausedRef.current) return;
+            const file = new File([blob], "frame.png", { type: "image/png" });
+            try {
+              const text = await oneShot.scanFile(file, false);
+              handleDecoded(text);
+            } catch {
+              /* no QR found in this frame */
+            }
+          } finally {
+            invertBusyRef.current = false;
           }
-          ctx.putImageData(img, 0, 0);
-          await new Promise<void>((resolve) =>
-            canvas.toBlob((blob) => {
-              if (!blob) return resolve();
-              const file = new File([blob], "frame.png", { type: "image/png" });
-              const oneShot = new Html5Qrcode(oneshotId, {
-                verbose: false,
-                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-              });
-              oneShot
-                .scanFile(file, false)
-                .then((text) => handleDecoded(text))
-                .catch(() => {})
-                .finally(() => {
-                  try {
-                    oneShot.clear();
-                  } catch {
-                    /* ignore */
-                  }
-                  resolve();
-                });
-            }, "image/png"),
-          );
         };
         invertTimerRef.current = window.setInterval(tryInverted, 600);
       })
@@ -112,6 +145,17 @@ export function QRScanner({
         clearInterval(invertTimerRef.current);
         invertTimerRef.current = null;
       }
+
+      const oneShot = oneshotRef.current;
+      oneshotRef.current = null;
+      if (oneShot) {
+        try {
+          oneShot.clear();
+        } catch {
+          /* ignore */
+        }
+      }
+
       if (isRunningRef.current) {
         isRunningRef.current = false;
         Promise.resolve(scanner.stop())
@@ -120,19 +164,20 @@ export function QRScanner({
       } else {
         Promise.resolve(scanner.clear()).catch(() => {});
       }
+      scannerRef.current = null;
     };
   }, [elementId, oneshotId]);
 
   useEffect(() => {
     const s = scannerRef.current;
+    // If the scanner isn't running yet, the start() success path reads
+    // pausedRef and reconciles, so dropping here is safe (intent isn't lost).
     if (!s || !isRunningRef.current) return;
-    if (paused) s.pause(true);
-    else {
-      try {
-        s.resume();
-      } catch {
-        /* ignore */
-      }
+    try {
+      if (paused) s.pause(true);
+      else s.resume();
+    } catch {
+      /* ignore: scanner may be mid-transition */
     }
   }, [paused]);
 

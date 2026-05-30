@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { addAttendee, validateAndRecordClaim } from "@/lib/db";
 import {
@@ -32,7 +32,13 @@ export function useClaimScanner({
 
   const claimType = selectedClaimType ?? enabledClaimTypes[0]?.id ?? "";
   const [result, setResult] = useState<ClaimValidationResult | null>(null);
-  const [lastTicketId, setLastTicketId] = useState("");
+
+  // Dedupe guards are refs (not state) so they update synchronously within a
+  // single tick. html5-qrcode fires the decode callback ~12x/sec plus a
+  // periodic inverted-frame fallback, so many callbacks arrive before any
+  // setState commits. A ref lock is the only reliable way to drop them.
+  const processingRef = useRef(false);
+  const lastTicketRef = useRef<{ id: string; at: number } | null>(null);
 
   useEffect(() => {
     if (!result) return;
@@ -44,13 +50,20 @@ export function useClaimScanner({
   }, [result]);
 
   async function handleScan(payload: string) {
-    if (!eventId) return;
+    if (!eventId || !claimType) return;
     const { ticketId, lumaTicketUrl } = parseQRPayload(payload);
+    if (!ticketId) return;
 
-    if (!ticketId || !claimType || ticketId === lastTicketId) return;
+    // Drop while a claim is already being recorded.
+    if (processingRef.current) return;
 
-    setLastTicketId(ticketId);
-    window.setTimeout(() => setLastTicketId(""), SCAN_DEDUPE_MS);
+    // Drop repeats of the same ticket inside the dedupe window.
+    const now = Date.now();
+    const last = lastTicketRef.current;
+    if (last && last.id === ticketId && now - last.at < SCAN_DEDUPE_MS) return;
+
+    processingRef.current = true;
+    lastTicketRef.current = { id: ticketId, at: now };
 
     try {
       const nextResult = await validateAndRecordClaim(
@@ -81,7 +94,15 @@ export function useClaimScanner({
         toast.error(nextResult.message);
       }
     } catch {
+      // Allow an immediate retry of a failed scan rather than locking it out.
+      lastTicketRef.current = null;
       toast.error("Scan failed. Please try again.");
+    } finally {
+      // Refresh the timestamp so the dedupe window starts after work finishes.
+      if (lastTicketRef.current?.id === ticketId) {
+        lastTicketRef.current = { id: ticketId, at: Date.now() };
+      }
+      processingRef.current = false;
     }
   }
 

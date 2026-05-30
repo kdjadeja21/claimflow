@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ClaimResult } from "@/components/scanner/ClaimResult";
 import { ManualEntry } from "@/components/scanner/ManualEntry";
 import { QRScanner } from "@/components/scanner/QRScanner";
+import { ScannerErrorBoundary } from "@/components/scanner/ScannerErrorBoundary";
 import { useClaimScanner } from "@/hooks/useClaimScanner";
 
 interface ScannerPanelProps {
@@ -56,12 +57,14 @@ export function ScannerPanel({
         </div>
       )}
 
-      <div className="relative">
-        <QRScanner paused={Boolean(result) || !claimType} onScan={handleScan} />
-        {result && (
-          <ClaimResult result={result} onReset={() => setResult(null)} />
-        )}
-      </div>
+      <ScannerErrorBoundary>
+        <div className="relative">
+          <QRScanner paused={Boolean(result) || !claimType} onScan={handleScan} />
+          {result && (
+            <ClaimResult result={result} onReset={() => setResult(null)} />
+          )}
+        </div>
+      </ScannerErrorBoundary>
 
       <ManualEntry onSubmit={handleScan} />
     </div>
