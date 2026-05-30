@@ -7,12 +7,18 @@ export {
   makeEventPublic,
   makeEventPrivate,
   resetEventClaims,
+  deleteEvent,
   getUserActiveEventId,
   setUserActiveEventId,
 } from "@/lib/db/events";
 
-export { getAttendees, addAttendee, deleteAttendee } from "@/lib/db/attendees";
+export { getAttendees, addAttendee, bulkAddAttendees, deleteAttendee, deleteSelectedAttendees, deleteAllAttendees } from "@/lib/db/attendees";
 
-export { hashPin, verifyPin, validateAndRecordClaim } from "@/lib/db/claims";
+export {
+  hashPin,
+  verifyPin,
+  validateAndRecordClaim,
+  deleteClaimRecord,
+} from "@/lib/db/claims";
 
 export { subscribeToEventData } from "@/lib/db/subscriptions";

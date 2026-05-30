@@ -1,4 +1,8 @@
-export type ClaimStatus = "approved" | "already_claimed" | "invalid_qr";
+export type ClaimStatus =
+  | "approved"
+  | "already_claimed"
+  | "invalid_qr"
+  | "not_allowed";
 
 export interface ClaimType {
   id: string;
@@ -24,6 +28,12 @@ export interface Attendee {
   email: string;
   eventId: string;
   lumaTicketUrl?: string;
+  phone?: string;
+  company?: string;
+  ticketType?: string;
+  approvalStatus?: string;
+  checkedInAt?: string;
+  professionalStatus?: string;
 }
 
 export interface Claim {

@@ -29,6 +29,14 @@ const resultConfig = {
     textClass: "text-white",
     subClass: "text-red-100",
   },
+  not_allowed: {
+    icon: CircleX,
+    title: "Not allowed",
+    bg: "bg-destructive",
+    iconClass: "text-white",
+    textClass: "text-white",
+    subClass: "text-red-100",
+  },
 };
 
 export function ClaimResult({

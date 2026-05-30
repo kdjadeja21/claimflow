@@ -1,8 +1,13 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  limit,
+  query,
   runTransaction,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { generateId } from "@/lib/utils";
@@ -58,9 +63,30 @@ export async function validateAndRecordClaim(
   const attendee = attendeeSnap.exists()
     ? (attendeeSnap.data() as Attendee)
     : undefined;
+  const attendeeListSnap = await getDocs(
+    query(collection(db, "events", eventId, "attendees"), limit(1))
+  );
+  const hasAttendeeList = !attendeeListSnap.empty;
 
   const displayName =
     attendee?.name || attendee?.ticketId || normalizedTicketId;
+
+  if (hasAttendeeList && !attendee) {
+    const attempt: ScanAttempt = {
+      id: attemptRef.id,
+      ticketId: normalizedTicketId,
+      claimType,
+      scannedAt: new Date().toISOString(),
+      scannedBy,
+      eventId,
+      status: "not_allowed",
+    };
+    await setDoc(attemptRef, attempt);
+    return {
+      status: "not_allowed",
+      message: `${normalizedTicketId} is not in the attendee list.`,
+    };
+  }
 
   return runTransaction(db, async (tx) => {
     const claimSnap = await tx.get(claimRef);
@@ -106,4 +132,8 @@ export async function validateAndRecordClaim(
       claim,
     };
   });
+}
+
+export async function deleteClaimRecord(eventId: string, claimId: string): Promise<void> {
+  await deleteDoc(doc(db, "events", eventId, "claims", claimId));
 }

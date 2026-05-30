@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, Plus } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { createEvent, getMyEvents, setUserActiveEventId } from "@/lib/db";
+import {
+  createEvent,
+  getMyEvents,
+  setUserActiveEventId,
+} from "@/lib/db";
 import { AppShell } from "@/components/layout/AppShell";
 import { EventCard } from "@/components/events/EventCard";
 import { Button } from "@/components/ui/button";

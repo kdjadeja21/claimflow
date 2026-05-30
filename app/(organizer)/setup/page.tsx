@@ -18,11 +18,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import {
+  deleteEvent,
   getEventById,
   getUserActiveEventId,
   makeEventPrivate,
   makeEventPublic,
   resetEventClaims,
+  setUserActiveEventId,
   updateEvent,
 } from "@/lib/db";
 import { AppShell } from "@/components/layout/AppShell";
@@ -58,6 +60,8 @@ export default function SetupPage() {
   // Reset dialog
   const [resetOpen, setResetOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState(false);
 
   // Make public dialog
   const [publicDialogOpen, setPublicDialogOpen] = useState(false);
@@ -152,6 +156,26 @@ export default function SetupPage() {
       toast.error("Failed to reset claims");
     } finally {
       setResetting(false);
+    }
+  }
+
+  async function handleDeleteEvent() {
+    if (!event || !user) return;
+    setDeletingEvent(true);
+    try {
+      await deleteEvent(event.eventId, user.uid);
+      await setUserActiveEventId(user.uid, null);
+      setDeleteOpen(false);
+      toast.success("Event deleted");
+      router.replace("/dashboard");
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to delete event";
+      toast.error(message);
+    } finally {
+      setDeletingEvent(false);
     }
   }
 
@@ -419,6 +443,40 @@ export default function SetupPage() {
                     </Button>
                     <Button variant="destructive" onClick={handleReset} disabled={resetting}>
                       {resetting ? "Resetting…" : "Reset claims"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-10 w-full" variant="destructive">
+                    <Trash2 className="size-4" aria-hidden />
+                    Delete event
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete this event?</DialogTitle>
+                    <DialogDescription>
+                      This permanently deletes this event, attendees, claim
+                      records, and scan attempts. This cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDeleteOpen(false)}
+                      disabled={deletingEvent}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteEvent}
+                      disabled={deletingEvent}
+                    >
+                      {deletingEvent ? "Deleting…" : "Delete event"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

@@ -1,6 +1,17 @@
-import { CheckCircle2, ExternalLink, XCircle } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { CheckCircle2, ExternalLink, Trash2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { Attendee, Claim, ClaimType, ScanAttempt } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
@@ -13,9 +24,7 @@ function getAttemptCounts(attempts: ScanAttempt[], claim: Claim) {
       a.ticketId.toLowerCase() === claim.ticketId.toLowerCase()
   );
   const passed = related.filter((a) => a.status === "approved").length;
-  const failed = related.filter(
-    (a) => a.status === "already_claimed" || a.status === "invalid_qr"
-  ).length;
+  const failed = related.filter((a) => a.status !== "approved").length;
   return { passed, failed, total: related.length };
 }
 
@@ -46,12 +55,19 @@ export function ClaimFeed({
   attendees,
   claimTypes,
   attempts,
+  canDeleteClaims = false,
+  onDeleteClaim,
 }: {
   claims: Claim[];
   attendees: Attendee[];
   claimTypes: ClaimType[];
   attempts: ScanAttempt[];
+  canDeleteClaims?: boolean;
+  onDeleteClaim?: (claim: Claim) => Promise<void>;
 }) {
+  const [claimToDelete, setClaimToDelete] = useState<Claim | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const recentClaims = [...claims]
     .sort((a, b) => Date.parse(b.claimedAt) - Date.parse(a.claimedAt))
     .slice(0, 30);
@@ -135,9 +151,62 @@ export function ClaimFeed({
                 </a>
               </Button>
             )}
+
+            {canDeleteClaims && onDeleteClaim && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 text-muted-foreground hover:text-destructive"
+                aria-label={`Delete claim record for ${displayName}`}
+                onClick={() => setClaimToDelete(claim)}
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+              </Button>
+            )}
           </div>
         );
       })}
+
+      <Dialog
+        open={!!claimToDelete}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setClaimToDelete(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete claim history record?</DialogTitle>
+            <DialogDescription>
+              This removes the selected claim from history and allows that ticket to claim this item again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setClaimToDelete(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!claimToDelete || deleting}
+              onClick={async () => {
+                if (!claimToDelete || !onDeleteClaim) return;
+                setDeleting(true);
+                try {
+                  await onDeleteClaim(claimToDelete);
+                  setClaimToDelete(null);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

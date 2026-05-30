@@ -1,8 +1,10 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  limit,
   setDoc,
   updateDoc,
   query,
@@ -114,6 +116,38 @@ export async function resetEventClaims(eventId: string): Promise<void> {
   await batch.commit();
 }
 
+export async function deleteEvent(eventId: string, requesterUid: string): Promise<void> {
+  const eventRef = doc(db, "events", eventId);
+  const eventSnap = await getDoc(eventRef);
+  if (!eventSnap.exists()) return;
+
+  const event = eventSnap.data() as ClaimEvent;
+  if (event.ownerUid !== requesterUid) {
+    throw new Error("Only the event creator can delete this event.");
+  }
+
+  const subcollections = ["claims", "attempts", "attendees"] as const;
+  const DELETE_BATCH_SIZE = 500;
+
+  for (const subcollection of subcollections) {
+    while (true) {
+      const snap = await getDocs(
+        query(
+          collection(db, "events", eventId, subcollection),
+          limit(DELETE_BATCH_SIZE)
+        )
+      );
+      if (snap.empty) break;
+
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+
+  await deleteDoc(eventRef);
+}
+
 export async function getUserActiveEventId(uid: string): Promise<string | null> {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? ((snap.data().activeEventId as string) ?? null) : null;
@@ -121,7 +155,7 @@ export async function getUserActiveEventId(uid: string): Promise<string | null> 
 
 export async function setUserActiveEventId(
   uid: string,
-  eventId: string
+  eventId: string | null
 ): Promise<void> {
   await setDoc(doc(db, "users", uid), { activeEventId: eventId }, { merge: true });
 }
