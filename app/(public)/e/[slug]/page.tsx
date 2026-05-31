@@ -45,7 +45,7 @@ export default function PublicEventHome() {
               Scan attendee QR codes to validate and distribute items. Enter your PIN when prompted.
             </p>
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="hidden shrink-0 gap-2 sm:flex">
             <Button asChild size="lg">
               <Link href={`/e/${slug}/scan`}>
                 Start scanning
@@ -55,7 +55,7 @@ export default function PublicEventHome() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-3 min-[400px]:gap-2 sm:gap-4">
           <StatCard
             label="Claims"
             value={claimCount}

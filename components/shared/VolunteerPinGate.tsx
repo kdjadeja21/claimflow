@@ -107,11 +107,7 @@ export function VolunteerPinGate({
             </p>
           )}
 
-          <Button
-            className="h-10 w-full"
-            onClick={unlock}
-            disabled={!pin || checking}
-          >
+          <Button className="w-full" size="lg" onClick={unlock} disabled={!pin || checking}>
             {checking ? "Checking…" : "Unlock scanner"}
           </Button>
         </CardContent>

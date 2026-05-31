@@ -134,7 +134,7 @@ export function AppShell({
           {/* Page content */}
           <main
             id="main-content"
-            className="flex-1 px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:px-6 lg:px-8 lg:py-8 md:pb-8"
+            className="flex-1 px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 lg:px-8 lg:py-8 md:pb-8"
           >
             <div className="mx-auto w-full max-w-5xl">{children}</div>
           </main>

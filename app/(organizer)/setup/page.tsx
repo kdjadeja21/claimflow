@@ -48,6 +48,9 @@ import { Switch } from "@/components/ui/switch";
 import type { ClaimEvent, ClaimType } from "@/lib/types";
 import { cn, generateId } from "@/lib/utils";
 
+const dangerOutlineButtonClass =
+  "w-full border-destructive/35 text-destructive shadow-xs hover:bg-destructive/10 hover:text-destructive dark:border-destructive/45 dark:hover:bg-destructive/15";
+
 export default function SetupPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -245,10 +248,10 @@ export default function SetupPage() {
           description={`${totalCount} claim type${totalCount !== 1 ? "s" : ""} · ${enabledCount} enabled`}
         />
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] lg:gap-6">
 
-          {/* Left column */}
-          <div className="space-y-4">
+          {/* Left column — below claim types on mobile */}
+          <div className="order-2 space-y-4 lg:order-1">
 
             {/* Event details */}
             <Card>
@@ -303,7 +306,7 @@ export default function SetupPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-2.5">
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "inline-flex size-2 rounded-full",
@@ -318,7 +321,7 @@ export default function SetupPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="w-full sm:w-auto"
                       onClick={handleMakePrivate}
                     >
                       Make private
@@ -326,7 +329,7 @@ export default function SetupPage() {
                   ) : (
                     <Dialog open={publicDialogOpen} onOpenChange={(o) => { setPublicDialogOpen(o); setPinError(""); setVolunteerPin(""); }}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="h-7 text-xs">
+                        <Button size="sm" className="w-full sm:w-auto">
                           Make public
                         </Button>
                       </DialogTrigger>
@@ -416,78 +419,104 @@ export default function SetupPage() {
             </Card>
 
             {/* Actions */}
-            <div className="space-y-2">
-              <Button className="h-10 w-full" onClick={() => save()} disabled={saving}>
-                <CheckCircle2 className="size-4" aria-hidden />
-                {saving ? "Saving…" : "Save setup"}
-              </Button>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Save changes</CardTitle>
+                <CardDescription>
+                  Apply event name and claim type updates.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button className="w-full" onClick={() => save()} disabled={saving}>
+                  <CheckCircle2 className="size-4" aria-hidden />
+                  {saving ? "Saving…" : "Save setup"}
+                </Button>
 
-              <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-                <DialogTrigger asChild>
-                  <Button className="h-10 w-full" variant="destructive">
-                    <AlertTriangle className="size-4" aria-hidden />
-                    Reset all claims
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Reset all claims?</DialogTitle>
-                    <DialogDescription>
-                      This clears claim history and duplicate attempts for this event.
-                      Attendees and setup stay saved.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setResetOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button variant="destructive" onClick={handleReset} disabled={resetting}>
-                      {resetting ? "Resetting…" : "Reset claims"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 dark:bg-destructive/10">
+                  <p className="text-xs font-medium text-destructive/90">
+                    Danger zone
+                  </p>
+                  <p className="mt-0.5 mb-3 text-xs text-muted-foreground">
+                    These actions cannot be undone.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={dangerOutlineButtonClass}
+                        >
+                          <AlertTriangle className="size-3.5" aria-hidden />
+                          Reset claims
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reset all claims?</DialogTitle>
+                          <DialogDescription>
+                            This clears claim history and duplicate attempts for this event.
+                            Attendees and setup stay saved.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setResetOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button variant="destructive" onClick={handleReset} disabled={resetting}>
+                            {resetting ? "Resetting…" : "Reset claims"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
 
-              <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                <DialogTrigger asChild>
-                  <Button className="h-10 w-full" variant="destructive">
-                    <Trash2 className="size-4" aria-hidden />
-                    Delete event
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Delete this event?</DialogTitle>
-                    <DialogDescription>
-                      This permanently deletes this event, attendees, claim
-                      records, and scan attempts. This cannot be undone.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setDeleteOpen(false)}
-                      disabled={deletingEvent}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleDeleteEvent}
-                      disabled={deletingEvent}
-                    >
-                      {deletingEvent ? "Deleting…" : "Delete event"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+                    <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={dangerOutlineButtonClass}
+                        >
+                          <Trash2 className="size-3.5" aria-hidden />
+                          Delete event
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete this event?</DialogTitle>
+                          <DialogDescription>
+                            This permanently deletes this event, attendees, claim
+                            records, and scan attempts. This cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setDeleteOpen(false)}
+                            disabled={deletingEvent}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={handleDeleteEvent}
+                            disabled={deletingEvent}
+                          >
+                            {deletingEvent ? "Deleting…" : "Delete event"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Right column — claim types */}
-          <Card className="self-start">
+          {/* Claim types — first on mobile */}
+          <Card className="order-1 self-start lg:order-2">
             <CardHeader>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="flex size-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
                     <Package className="size-4" aria-hidden />
@@ -544,8 +573,8 @@ export default function SetupPage() {
                     </div>
 
                     {/* Row 2: inventory + enabled toggle */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-1 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5">
                         <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                           Qty
                         </span>
@@ -561,7 +590,7 @@ export default function SetupPage() {
                           }
                         />
                       </div>
-                      <label className="flex cursor-pointer items-center gap-2 text-xs font-medium">
+                      <label className="flex cursor-pointer items-center justify-between gap-2 text-xs font-medium sm:justify-start sm:shrink-0">
                         <Switch
                           checked={ct.enabled}
                           aria-label={`${ct.enabled ? "Disable" : "Enable"} ${ct.label}`}
@@ -581,38 +610,40 @@ export default function SetupPage() {
               <Separator />
 
               {/* Add new claim type */}
-              <div className="space-y-2.5 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+              <div className="space-y-3 rounded-lg border border-dashed border-border bg-muted/20 p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                   Add claim type
                 </p>
-                <div className="grid grid-cols-[1fr_80px] gap-2">
-                  <Input
-                    className="h-9"
-                    placeholder="e.g. Dinner"
-                    value={newClaimLabel}
-                    aria-label="New claim type name"
-                    onChange={(e) => setNewClaimLabel(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addClaimType()}
-                  />
-                  <Input
-                    className="h-9 text-center"
-                    inputMode="numeric"
-                    type="number"
-                    min={0}
-                    aria-label="New claim type inventory"
-                    value={newClaimInventory}
-                    onChange={(e) => setNewClaimInventory(Number(e.target.value) || 0)}
-                  />
+                <div className="flex flex-col gap-2">
+                  <div className="grid min-w-0 grid-cols-1 gap-2 min-[400px]:grid-cols-[1fr_4.5rem]">
+                    <Input
+                      className="h-9"
+                      placeholder="e.g. Dinner"
+                      value={newClaimLabel}
+                      aria-label="New claim type name"
+                      onChange={(e) => setNewClaimLabel(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addClaimType()}
+                    />
+                    <Input
+                      className="h-9 text-center tabular-nums"
+                      inputMode="numeric"
+                      type="number"
+                      min={0}
+                      aria-label="New claim type inventory"
+                      value={newClaimInventory}
+                      onChange={(e) => setNewClaimInventory(Number(e.target.value) || 0)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full min-[400px]:w-auto min-[400px]:min-w-[6.5rem] min-[400px]:self-end"
+                    size="sm"
+                    disabled={!newClaimLabel.trim()}
+                    onClick={addClaimType}
+                  >
+                    <Plus className="size-4" aria-hidden />
+                    Add type
+                  </Button>
                 </div>
-                <Button
-                  className="h-9 w-full"
-                  variant="outline"
-                  disabled={!newClaimLabel.trim()}
-                  onClick={addClaimType}
-                >
-                  <Plus className="size-4" aria-hidden />
-                  Add type
-                </Button>
               </div>
             </CardContent>
           </Card>
